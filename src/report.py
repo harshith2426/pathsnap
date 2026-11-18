@@ -177,7 +177,14 @@ def build():
           p("Technical Report - UE24CS352A Machine Learning Hackathon", ParagraphStyle(
               "ST", parent=BODY, alignment=TA_CENTER, fontSize=11)),
           Spacer(1, 8),
-          p("Team members: ______________________________", ParagraphStyle("TM", parent=BODY, alignment=TA_CENTER)),
+          p("Team members", ParagraphStyle("TM", parent=BODY, alignment=TA_CENTER, fontName="Helvetica-Bold")),
+          table([["Name", "SRN"],
+                 ["Sai Harshith R", "PES1UG24CS398"],
+                 ["Sahajpreet Singh", "PES1UG24CS397"],
+                 ["Sakthevel Saravanan", "PES1UG24CS405"],
+                 ["Saksham Bajpayi", "PES1UG24CS404"]],
+                [6 * cm, 5 * cm]),
+          Spacer(1, 6),
           p("GitHub repository: https://github.com/harshith2426/pathsnap", ParagraphStyle(
               "GH", parent=BODY, alignment=TA_CENTER)),
           Spacer(1, 14),
