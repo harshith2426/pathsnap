@@ -256,12 +256,13 @@ Continuity of the labels themselves (reference) on student-test: 0.985.
 - Fold 2 is hard for every model (e.g. LightGBM Top-1 0.794 vs ~0.90-0.91 on
   the other folds); the cause was not investigated in detail - it is likely
   that fold holds trips with harder road layouts or noisier GPS.
-- **Overfitting check:** CV and student-test scores are very close for every
-  model (e.g. LightGBM CV macro F1 0.929, test 0.932), so no sign of
-  overfitting. In the LightGBM learning curve train and validation log loss
-  fall together and flatten after ~150 iterations (train 0.051 vs
-  validation 0.054 at 300 - only a tiny gap). The MLP's validation loss is
-  below its training loss because the held-out trips happen to be easier.
+- **Overfitting check** (`results/models/train_vs_cv.csv`, added later): CV and
+  student-test agree within ~0.01 for every model, so all models generalise to
+  new trips. Comparing the training-row score with CV shows: Logistic
+  Regression and Naive Bayes no gap (~0.002) but a low ceiling (mild
+  underfitting); KNN 1.000 on its own training rows (each row is its own
+  nearest neighbour - memorisation, only CV is meaningful); Random Forest
+  gap 0.027 (mild overfitting); LightGBM gap 0.014; MLP gap 0.008.
 - **Model selection: LightGBM.** Tied-best CV macro F1 and Top-1, best
   student-test log loss and macro F1, 5x faster to train than RF and MLP,
   small model file, handles raw (unscaled) features, gives good
@@ -291,9 +292,10 @@ epochs / iterations, so only they have loss curves).
    standard deviation, but LightGBM is 5x faster to train, smaller, needs no
    scaling, gives the best log loss (probabilities for the HMM) and has
    meaningful hyperparameters to tune.
-6. **Is there overfitting?** No: CV and student-test results agree within
-   ~0.01 for every model, and the LightGBM train/validation loss curves
-   flatten together.
+6. **Is there overfitting?** Mild, for the tree models: training-row macro F1
+   is above CV by 0.027 (Random Forest) and 0.014 (LightGBM), but CV and
+   student-test agree within ~0.01, so they still generalise well. LR and
+   NB show no gap but a lower ceiling (slight underfitting).
 7. **Why sample 600k rows?** Equal training size for every model makes the
    comparison fair and keeps run time manageable; the 600k rows still cover
    all 80 training trips.
