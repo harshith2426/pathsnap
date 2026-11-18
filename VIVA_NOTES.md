@@ -254,7 +254,8 @@ Continuity of the labels themselves (reference) on student-test: 0.985.
   Top-1 0.876). Differences between them are smaller than the fold std
   (~0.025), so CV cannot separate them.
 - Fold 2 is hard for every model (e.g. LightGBM Top-1 0.794 vs ~0.90-0.91 on
-  the other folds): it contains trips with dense, parallel roads.
+  the other folds); the cause was not investigated in detail - it is likely
+  that fold holds trips with harder road layouts or noisier GPS.
 - **Overfitting check:** CV and student-test scores are very close for every
   model (e.g. LightGBM CV macro F1 0.929, test 0.932), so no sign of
   overfitting. In the LightGBM learning curve train and validation log loss
