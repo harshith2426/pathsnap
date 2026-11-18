@@ -162,7 +162,12 @@ def plots(comp, folds):
     ax.tick_params(axis="x", rotation=20); ax.legend(); ax.set_title("Log loss")
     fig.tight_layout(); fig.savefig(OUT / "log_loss.png", dpi=130); plt.close(fig)
 
-    fig, axes = plt.subplots(1, len(names), figsize=(3.2 * len(names), 3.2))
+    ncol = 4
+    nrow = int(np.ceil(len(names) / ncol))
+    fig, axes = plt.subplots(nrow, ncol, figsize=(3.4 * ncol, 3.2 * nrow))
+    axes = axes.ravel()
+    for ax in axes[len(names):]:
+        ax.axis("off")
     for ax, (_, r) in zip(axes, comp.iterrows()):
         cm = np.array(r.confusion)
         ax.imshow(cm / cm.sum(axis=1, keepdims=True), cmap="Blues", vmin=0, vmax=1)
