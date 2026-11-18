@@ -97,3 +97,90 @@ and from accuracy calculations; the flag is kept so we can report it.
 6. **Did you use student_test or evaluator data for any decision?** Only
    train was used to decide the 50 m rule and the method; student_test was
    only summarised. Evaluator data was never available to us.
+
+---
+
+## Stage 2 - Candidate generation and feature engineering
+
+### What we did and why
+- **Candidates** (`src/candidates.py`): a road network has ~20,000 arcs, but a
+  GPS point can only be on one of the few arcs near it. For each point we
+  collect all arcs within **R = 50 m**. This turns map-matching into a small
+  ranking problem: "which of these ~9 candidates is the true arc?"
+- **Fast search:** arcs near the track are sampled every 10 m, the samples go
+  into a KD-tree, and each GPS point asks for samples within R + 5 m; then the
+  exact point-to-arc distance is computed and only arcs <= R are kept. (+5 m
+  because the nearest sample is at most half a spacing from the true closest
+  point, so nothing within R is missed.)
+- **Choosing R** - radius study on TRAIN only (`results/candidates/radius_study_train.csv`):
+
+| R (m) | miss rate, reliable points | candidates / point |
+|---|---|---|
+| 20 | 3.70% | 3.6 |
+| 30 | 1.52% | 5.3 |
+| 40 | 0.56% | 7.0 |
+| **50** | **0.00%** | **9.0** |
+| 75 | 0.00% | 14.9 |
+| 100 | 0.00% | 22.4 |
+
+  50 m is the smallest radius with no misses on reliable points while keeping
+  the candidate set small. Honest caveat: reliable labels are defined as
+  <= 50 m, so 0% at 50 m is partly by construction; counting all points
+  (including routes that stop early) the miss rate is 11.16% on train and
+  0.14% on student_test.
+- **Features** (`src/features.py`) - 13 per (point, candidate) pair, none of
+  which use the reference route, so the API can compute them for new trips:
+  distance, distance rank, extra distance vs closest, number of candidates,
+  heading difference (+ validity flag), arc length, distance to arc end,
+  speed, two-way flag, out-degree of end node, mean and max distance of the 5
+  neighbouring GPS points to the arc.
+- **Label:** `is_true = 1` if the candidate equals the point's labelled arc.
+
+### Key code in plain words
+- `arc_sample_points`: cuts every arc into 10 m pieces and returns the cut points.
+- `generate_candidates`: KD-tree lookup, then exact distance filter.
+- `point_motion`: heading = direction from point i-2 to i+2; speed = that
+  distance / time. If the car moved < 3 m the heading is marked invalid.
+- `build_features`: groups candidates by point to get ranks and relative
+  distances, then adds arc attributes and the "window" distances.
+
+### Results (real numbers, `results/candidates/`)
+| | train | student_test |
+|---|---|---|
+| candidate rows | 1,869,591 | 209,581 |
+| candidates per point (mean) | 8.97 | 10.94 |
+| positive (true) rows | 9.90% | 9.13% |
+| points with no candidate within 50 m | 8.75% | 0.00% |
+| miss rate (reliable points) | 0.00% | 0.00% |
+
+Feature means on train (reliable points), true vs wrong candidate:
+distance 6.5 vs 27.0 m; heading difference 23.9 vs 95.3 deg; window mean
+distance 8.8 vs 29.8 m; distance rank 0.73 vs 10.41.
+The plot `feature_distributions_train.png` shows the separation.
+
+Observation: true candidates often have rank 1 instead of 0, because a
+two-way street is two arcs with the same geometry (same distance). Only the
+heading feature can tell the two directions apart.
+
+The 8.75% of train points with no candidates are almost all in trips 54 / 33,
+where the GPS continues after the route ends - far from the clipped network.
+
+### Viva questions
+1. **Why generate candidates instead of classifying among all arcs?** Arc ids
+   are local to each trip and there are thousands of them. Restricting to
+   nearby arcs gives a small, fixed-meaning binary problem (is this candidate
+   the true one?) that transfers across trips.
+2. **How did you choose the 50 m radius?** Radius study on train: miss rate
+   vs candidate count; 50 m was the smallest radius with 0% miss on reliable
+   points (40 m missed 0.56%).
+3. **What is the candidate miss rate and why does it matter?** The share of
+   points whose true arc is not in the candidate set. Those points can never
+   be predicted correctly, so it caps the achievable Top-1 accuracy.
+4. **Why the heading feature?** Two-way streets are two arcs with identical
+   geometry; distance can't separate them, but the travel direction can
+   (true: 24 deg mean difference, wrong: 95 deg).
+5. **Why the window distance features?** A single GPS point is noisy; the true
+   arc should also be close to the neighbouring points, a wrong parallel road
+   usually is not. It is a cheap way to use local context before the HMM.
+6. **Do features leak the label?** No. They use only GPS, timestamps and the
+   network. The route is used only to make the `is_true` target.
