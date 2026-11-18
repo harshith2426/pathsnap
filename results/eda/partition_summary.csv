@@ -1,0 +1,16 @@
+,student_test,train
+trips,10.0,80.0
+total_obs,19160.0,208417.0
+median_obs,1420.0,1529.0
+missing_values,0.0,0.0
+invalid_coords,0.0,0.0
+non_increasing_time,0.0,0.0
+median_pct_dt_1s,99.93230606354611,99.14387810304783
+trips_with_gap_over_60s,1.0,22.0
+median_nodes,6596.5,9608.0
+median_arcs,13145.0,19526.5
+isolated_nodes,0.0,0.0
+median_weak_components,11.0,20.0
+median_route_len,250.0,280.0
+total_route_breaks,1.0,13.0
+median_label_dist_m,4.744639673803096,4.629264529759244

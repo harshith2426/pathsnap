@@ -1,0 +1,50 @@
+partition,trip_id,issue
+train,00000011,large time gap (>10 min)
+train,00000021,large time gap (>10 min)
+train,00000042,large time gap (>10 min)
+train,00000069,large time gap (>10 min)
+train,00000078,large time gap (>10 min)
+train,00000090,large time gap (>10 min)
+train,00000033,route ends before GPS track (>20% unreliable labels)
+train,00000054,route ends before GPS track (>20% unreliable labels)
+train,00000002,some GPS far from route (5-20% unreliable labels)
+train,00000043,some GPS far from route (5-20% unreliable labels)
+train,00000066,some GPS far from route (5-20% unreliable labels)
+train,00000002,route not fully connected
+train,00000019,route not fully connected
+train,00000033,route not fully connected
+train,00000041,route not fully connected
+train,00000042,route not fully connected
+train,00000069,route not fully connected
+train,00000075,route not fully connected
+train,00000080,route not fully connected
+train,00000086,route not fully connected
+train,00000089,route not fully connected
+student_test,00000076,route not fully connected
+train,00000006,track does not start at t=1
+train,00000014,track does not start at t=1
+train,00000021,track does not start at t=1
+train,00000022,track does not start at t=1
+train,00000025,track does not start at t=1
+train,00000032,track does not start at t=1
+train,00000034,track does not start at t=1
+train,00000046,track does not start at t=1
+train,00000060,track does not start at t=1
+train,00000062,track does not start at t=1
+train,00000063,track does not start at t=1
+train,00000068,track does not start at t=1
+train,00000070,track does not start at t=1
+train,00000078,track does not start at t=1
+train,00000081,track does not start at t=1
+train,00000090,track does not start at t=1
+train,00000004,low 1 Hz share (<80%)
+train,00000022,low 1 Hz share (<80%)
+train,00000025,low 1 Hz share (<80%)
+train,00000026,low 1 Hz share (<80%)
+train,00000039,low 1 Hz share (<80%)
+train,00000046,low 1 Hz share (<80%)
+train,00000071,low 1 Hz share (<80%)
+train,00000078,low 1 Hz share (<80%)
+train,00000081,low 1 Hz share (<80%)
+train,00000090,low 1 Hz share (<80%)
+train,00000098,low 1 Hz share (<80%)

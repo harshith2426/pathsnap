@@ -1,0 +1,12 @@
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+networkx
+joblib
+folium
+lightgbm
+optuna
+fastapi
+uvicorn[standard]

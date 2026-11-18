@@ -1,0 +1,17 @@
+# Raw dataset is NOT committed (large; lives outside the repo)
+Student folder/
+data/
+data_derived/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
