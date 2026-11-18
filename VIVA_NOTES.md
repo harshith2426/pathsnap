@@ -580,3 +580,40 @@ The API console logged every request.
    the GPS preview, the predicted route and the metrics.
 4. **What if the API address changes?** Type the new address in the box and
    press Connect - no code change.
+
+---
+
+## Stage 9 - Two-laptop integration test
+
+### What we did
+- **Laptop 1 (API):** `set PATHSNAP_EVAL_DIR=<evaluator_test folder>` then
+  `python -m uvicorn api.main:app --host 0.0.0.0 --port 8000`. The evaluator
+  trips (incl. `.route` files) exist only on this laptop.
+- **Laptop 2 (UI):** cloned the public GitHub repo,
+  `python -m http.server 8080 --directory ui`, opened http://localhost:8080 and
+  entered `http://<laptop-1-IP>:8000` (laptop 1's Wi-Fi IPv4 from `ipconfig`).
+- Both laptops on the same phone hotspot (campus Wi-Fi can block
+  laptop-to-laptop traffic). Windows Firewall had to allow Python on the
+  *Public* network profile, because the hotspot was classified as Public.
+
+### Result
+Laptop 2 showed "Connected · LightGBM (Optuna-tuned)", listed the 10
+evaluator trips, and e.g. trip 00000017 returned 96.51% point accuracy,
+1,346 GPS points, route segment F1 97.19%, server time 5.35 s - identical to
+the same trip run locally on laptop 1. Every request appeared in laptop 1's
+console log (`POST /predict trip=... accuracy=...`).
+
+### Viva questions
+1. **What does laptop 2 send to laptop 1?** Only the trip id. Files and
+   reference routes stay on laptop 1.
+2. **Why did the first attempt time out?** The API was not running yet; on a
+   Public network Windows drops connections to closed ports silently, so the
+   browser waits instead of being refused.
+3. **Why did opening `http://<ip>:8000/` give 404?** The API has no page at
+   `/`; only `/health`, `/trips` and `/predict` exist. The 404 still proved
+   the network path worked.
+4. **Why is continuity 88.85% on trip 17 when the route looks connected?**
+   The continuity metric only counts directly connected consecutive arcs; in
+   a dense network the vehicle can pass a very short arc between two 1 Hz
+   fixes, which the HMM allows but the metric counts as a break. Route
+   segment F1 (97.19%) confirms the route itself is right.
