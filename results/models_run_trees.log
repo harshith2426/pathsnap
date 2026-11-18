@@ -1,0 +1,24 @@
+== RandomForest
+  RandomForest fold 0: macroF1=0.9371 top1=0.8966
+  RandomForest fold 1: macroF1=0.9505 top1=0.9132
+  RandomForest fold 2: macroF1=0.8857 top1=0.7913
+  RandomForest fold 3: macroF1=0.9459 top1=0.9052
+  RandomForest fold 4: macroF1=0.9254 top1=0.8714
+  test top1=0.8793 macroF1=0.9315 logloss=0.0568 fit=24.7s
+== LightGBM
+  LightGBM fold 0: macroF1=0.9375 top1=0.8967
+  LightGBM fold 1: macroF1=0.9497 top1=0.9135
+  LightGBM fold 2: macroF1=0.8879 top1=0.7942
+  LightGBM fold 3: macroF1=0.9452 top1=0.9069
+  LightGBM fold 4: macroF1=0.9235 top1=0.8685
+  test top1=0.8831 macroF1=0.9322 logloss=0.0556 fit=5.5s
+== MLP
+  MLP fold 0: macroF1=0.9355 top1=0.8958
+  MLP fold 1: macroF1=0.9481 top1=0.9139
+  MLP fold 2: macroF1=0.8832 top1=0.7981
+  MLP fold 3: macroF1=0.9390 top1=0.9043
+  MLP fold 4: macroF1=0.9206 top1=0.8681
+  test top1=0.8863 macroF1=0.9314 logloss=0.0572 fit=28.9s
+C:\Users\saiha\AppData\Local\Programs\Python\Python311\Lib\site-packages\lightgbm\sklearn.py:1106: LGBMDeprecationWarning: The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead.
+  eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
+done trees

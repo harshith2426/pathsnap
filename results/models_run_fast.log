@@ -1,0 +1,22 @@
+== LogisticRegression
+  LogisticRegression fold 0: macroF1=0.9141 top1=0.8881
+  LogisticRegression fold 1: macroF1=0.9183 top1=0.8980
+  LogisticRegression fold 2: macroF1=0.8673 top1=0.7863
+  LogisticRegression fold 3: macroF1=0.9129 top1=0.8945
+  LogisticRegression fold 4: macroF1=0.9010 top1=0.8579
+  test top1=0.8636 macroF1=0.9079 logloss=0.0855 fit=1.1s
+== GaussianNB
+  GaussianNB fold 0: macroF1=0.7871 top1=0.8346
+  GaussianNB fold 1: macroF1=0.7826 top1=0.8552
+  GaussianNB fold 2: macroF1=0.7627 top1=0.7583
+  GaussianNB fold 3: macroF1=0.7911 top1=0.8543
+  GaussianNB fold 4: macroF1=0.7824 top1=0.7718
+  test top1=0.8048 macroF1=0.7826 logloss=0.4758 fit=0.1s
+== KNN
+  KNN fold 0: macroF1=0.9118 top1=0.8766
+  KNN fold 1: macroF1=0.9108 top1=0.8787
+  KNN fold 2: macroF1=0.8575 top1=0.7771
+  KNN fold 3: macroF1=0.9067 top1=0.8695
+  KNN fold 4: macroF1=0.9022 top1=0.8502
+  test top1=0.8571 macroF1=0.9043 logloss=0.0943 fit=0.2s
+done fast

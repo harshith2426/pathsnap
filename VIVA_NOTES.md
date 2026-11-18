@@ -184,3 +184,115 @@ where the GPS continues after the route ends - far from the clipped network.
    usually is not. It is a cheap way to use local context before the HMM.
 6. **Do features leak the label?** No. They use only GPS, timestamps and the
    network. The route is used only to make the `is_true` target.
+
+---
+
+## Stages 3-4 - Baseline and six-model comparison
+
+### What we did and why
+- **Task for every model:** binary classification of (GPS point, candidate arc)
+  rows: is this candidate the true arc? The predicted probability is used to
+  pick the best candidate per point (Top-1) and later as the HMM emission.
+- **Baseline (no learning):** pick the nearest candidate arc.
+- **Six models, six algorithm families** (`src/models.py`):
+
+| Model | Family | Key configuration |
+|---|---|---|
+| Logistic Regression | Linear | StandardScaler + L2, C=1.0 |
+| Gaussian Naive Bayes | Probabilistic | var_smoothing=1e-9 |
+| KNN | Instance-based | StandardScaler, k=25, distance-weighted, 50k stored rows |
+| Random Forest | Bagging ensemble | 100 trees, max_depth=16, min_samples_leaf=5 |
+| LightGBM | Gradient boosting | 300 trees, learning_rate=0.05, num_leaves=31 |
+| MLP | Neural network | StandardScaler, 64-32 ReLU, Adam lr=1e-3, alpha=1e-4, 20 epochs |
+
+- **Protocol** (`src/train_models.py`):
+  - 5-fold **GroupKFold by trip** on TRAIN reliable points - no trip is in
+    both a training and a validation fold (prevents leakage between
+    neighbouring GPS points of the same trip).
+  - Each fit uses the same random sample of at most 600,000 candidate rows
+    (whole points sampled, so a point keeps all its candidates); KNN keeps
+    50,000 because its prediction cost grows with the stored rows.
+  - Scaling is inside a Pipeline, so it is fitted on the training fold only.
+  - No class weights: positives are ~10%, not extreme, and we want honest
+    probabilities for the HMM.
+  - Final model per algorithm fitted on the TRAIN sample, evaluated once on
+    STUDENT_TEST. Seed 42 everywhere. Logs: `results/models/experiment_log.json`.
+- **Metrics:** pair-level accuracy, precision, recall, F1, macro F1 and log loss
+  (threshold 0.5); point-level **Top-1 accuracy** (best candidate per point =
+  labelled arc); route continuity (consecutive picks equal or directly
+  connected); route arc F1 (set of picked arcs vs labelled arcs, per trip).
+
+**Primary metric: Top-1 accuracy** - it is exactly what the evaluator measures
+(was each GPS point matched to the right road segment). Macro F1 and log loss
+are secondary: log loss matters because the HMM uses the probabilities.
+
+### Results (real numbers, `results/models/model_comparison.csv`)
+| Model | CV macro F1 (mean ± std) | CV Top-1 | CV log loss | Test macro F1 | Test Top-1 | Test log loss | Test continuity | Fit (s) | Inference (ms / 1k points) |
+|---|---|---|---|---|---|---|---|---|---|
+| Nearest arc (baseline) | 0.752 | 0.555 | n/a | 0.745 | 0.537 | n/a | 0.821 | 0 | n/a |
+| Logistic Regression | 0.903 ± 0.021 | 0.865 | 0.105 | 0.908 | 0.864 | 0.086 | 0.924 | 1.1 | 1.0 |
+| Gaussian NB | 0.781 ± 0.011 | 0.815 | 0.505 | 0.783 | 0.805 | 0.476 | 0.926 | 0.1 | 2.8 |
+| KNN | 0.898 ± 0.023 | 0.850 | 0.115 | 0.904 | 0.857 | 0.094 | 0.930 | 0.2 | 4,786 |
+| Random Forest | 0.929 ± 0.026 | 0.876 | 0.067 | 0.932 | 0.879 | 0.057 | 0.933 | 24.7 | 19.3 |
+| **LightGBM** | 0.929 ± 0.025 | 0.876 | 0.068 | **0.932** | 0.883 | **0.056** | 0.934 | **5.5** | 25.2 |
+| MLP | 0.925 ± 0.026 | 0.876 | 0.071 | 0.931 | 0.886 | 0.057 | 0.939 | 28.9 | 2.2 |
+
+Continuity of the labels themselves (reference) on student-test: 0.985.
+
+### Observations
+- **Baseline only 53.7% Top-1.** Two-way streets are two arcs at exactly the
+  same distance, so "nearest" is a coin-flip between directions. Every
+  learned model uses the heading feature and gains 27-35 points.
+- **Naive Bayes** has the worst log loss (0.48): it assumes independent
+  features, but distance, distance rank, extra distance and window distance
+  are strongly correlated, so it double-counts evidence -> over-confident.
+- **Logistic Regression** is good (0.864) but linear: it cannot express rules
+  like "distance matters less when the heading is wrong".
+- **KNN** is close to LR but needs ~4.8 s per 1,000 points to predict - too
+  slow for a live API, and it needs scaling.
+- **Random Forest, LightGBM, MLP** are tied in CV (macro F1 0.925-0.929,
+  Top-1 0.876). Differences between them are smaller than the fold std
+  (~0.025), so CV cannot separate them.
+- Fold 2 is hard for every model (e.g. LightGBM Top-1 0.794 vs ~0.90-0.91 on
+  the other folds): it contains trips with dense, parallel roads.
+- **Overfitting check:** CV and student-test scores are very close for every
+  model (e.g. LightGBM CV macro F1 0.929, test 0.932), so no sign of
+  overfitting. In the LightGBM learning curve train and validation log loss
+  fall together and flatten after ~150 iterations (train 0.051 vs
+  validation 0.054 at 300 - only a tiny gap). The MLP's validation loss is
+  below its training loss because the held-out trips happen to be easier.
+- **Model selection: LightGBM.** Tied-best CV macro F1 and Top-1, best
+  student-test log loss and macro F1, 5x faster to train than RF and MLP,
+  small model file, handles raw (unscaled) features, gives good
+  probabilities for the HMM, and has many hyperparameters for Bayesian
+  tuning to improve.
+
+### Visualisations (`results/models/`)
+`cv_macro_f1.png`, `student_test_top1_macro_f1.png`, `log_loss.png`,
+`confusion_matrices.png`, `inference_time.png`,
+`learning_curves_mlp_lightgbm.png` (only these two models train in
+epochs / iterations, so only they have loss curves).
+
+### Viva questions
+1. **Why GroupKFold by trip?** Consecutive GPS points of one trip are almost
+   identical; if a trip were split across folds the model would be tested on
+   near-copies of its training data and the score would be too optimistic.
+2. **Why is Top-1 accuracy the primary metric and not accuracy?** Pair accuracy
+   is ~90% just by predicting "not the road" for everything (only ~10% of
+   rows are positive). Top-1 measures what we actually need: the right
+   segment per GPS point.
+3. **Why did Naive Bayes do worst?** Its independence assumption is broken by
+   our correlated distance features, so its probabilities are over-confident
+   (log loss 0.48 vs 0.06).
+4. **Why not KNN in production?** Similar accuracy to LR but ~5 s per 1,000
+   points at prediction time - it compares each row with all stored rows.
+5. **Why LightGBM over RF and MLP when they tie?** Same accuracy within one
+   standard deviation, but LightGBM is 5x faster to train, smaller, needs no
+   scaling, gives the best log loss (probabilities for the HMM) and has
+   meaningful hyperparameters to tune.
+6. **Is there overfitting?** No: CV and student-test results agree within
+   ~0.01 for every model, and the LightGBM train/validation loss curves
+   flatten together.
+7. **Why sample 600k rows?** Equal training size for every model makes the
+   comparison fair and keeps run time manageable; the 600k rows still cover
+   all 80 training trips.

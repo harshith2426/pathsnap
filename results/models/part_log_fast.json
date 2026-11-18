@@ -1,0 +1,68 @@
+{
+ "LogisticRegression": {
+  "family": "Linear",
+  "config": "StandardScaler + L2, C=1.0, lbfgs",
+  "seed": 42,
+  "params": {
+   "memory": "None",
+   "steps": "[('scale', StandardScaler()), ('clf', LogisticRegression(max_iter=1000))]",
+   "transform_input": "None",
+   "verbose": "False",
+   "scale": "StandardScaler()",
+   "clf": "LogisticRegression(max_iter=1000)",
+   "scale__copy": "True",
+   "scale__with_mean": "True",
+   "scale__with_std": "True",
+   "clf__C": "1.0",
+   "clf__class_weight": "None",
+   "clf__dual": "False",
+   "clf__fit_intercept": "True",
+   "clf__intercept_scaling": "1",
+   "clf__l1_ratio": "0.0",
+   "clf__max_iter": "1000",
+   "clf__n_jobs": "None",
+   "clf__penalty": "deprecated",
+   "clf__random_state": "None",
+   "clf__solver": "lbfgs",
+   "clf__tol": "0.0001",
+   "clf__verbose": "0",
+   "clf__warm_start": "False"
+  },
+  "max_train_rows": 600000
+ },
+ "GaussianNB": {
+  "family": "Probabilistic",
+  "config": "Gaussian likelihoods, var_smoothing=1e-9",
+  "seed": 42,
+  "params": {
+   "priors": "None",
+   "var_smoothing": "1e-09"
+  },
+  "max_train_rows": 600000
+ },
+ "KNN": {
+  "family": "Instance-based",
+  "config": "StandardScaler, k=25, distance-weighted, 50k train rows",
+  "seed": 42,
+  "params": {
+   "memory": "None",
+   "steps": "[('scale', StandardScaler()), ('clf', KNeighborsClassifier(n_jobs=-1, n_neighbors=25, weights='distance'))]",
+   "transform_input": "None",
+   "verbose": "False",
+   "scale": "StandardScaler()",
+   "clf": "KNeighborsClassifier(n_jobs=-1, n_neighbors=25, weights='distance')",
+   "scale__copy": "True",
+   "scale__with_mean": "True",
+   "scale__with_std": "True",
+   "clf__algorithm": "auto",
+   "clf__leaf_size": "30",
+   "clf__metric": "minkowski",
+   "clf__metric_params": "None",
+   "clf__n_jobs": "-1",
+   "clf__n_neighbors": "25",
+   "clf__p": "2",
+   "clf__weights": "distance"
+  },
+  "max_train_rows": 50000
+ }
+}
