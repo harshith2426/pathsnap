@@ -1,7 +1,7 @@
 # PathSnap - Map-matching and Route Reconstruction
 
 Matches noisy GPS trajectories to a road network. For every GPS point a
-classifier (LightGBM) scores the nearby road
+classifier (LightGBM, tuned with Bayesian optimisation) scores the nearby road
 segments; an HMM/Viterbi decoder then turns those scores into a connected
 route. A FastAPI backend (laptop 1) serves predictions to a browser UI
 (laptop 2).
@@ -12,7 +12,7 @@ GPS track + road network
    -> classifier probability          -> HMM / Viterbi  -> one arc per GPS point
 ```
 
-## Results so far (Stages 1-4)
+## Results
 
 All numbers below come from the files in `results/` and can be reproduced with
 the commands in section 3. Partitions: models are trained on `train`
@@ -87,8 +87,46 @@ Full table: [`results/models/model_comparison.csv`](results/models/model_compari
 all hyperparameters and seeds: [`results/models/experiment_log.json`](results/models/experiment_log.json) ·
 explanations: [`VIVA_NOTES.md`](VIVA_NOTES.md).
 
-*Still to come: Bayesian tuning of LightGBM, HMM/Viterbi route
-reconstruction, API and UI results.*
+### Bayesian hyperparameter optimisation (LightGBM)
+Optuna TPE sampler, 25 trials, objective = mean Top-1 accuracy over 3-fold
+GroupKFold by trip on train. Best: n_estimators 700, learning_rate 0.0111,
+num_leaves 127, min_child_samples 24, subsample 0.592, colsample_bytree 0.696,
+reg_lambda 1.134.
+
+| | CV macro F1 | CV Top-1 | CV log loss | Test macro F1 | Test Top-1 | Test log loss | Fit (s) |
+|---|---|---|---|---|---|---|---|
+| Untuned | 0.9288 | 0.8760 | 0.0679 | 0.9322 | 0.8831 | 0.0556 | 6.8 |
+| **Tuned** | **0.9299** | **0.8778** | **0.0649** | **0.9338** | **0.8849** | **0.0545** | 48.0 |
+
+| Optimisation history | Hyperparameter vs score |
+|---|---|
+| ![opt](results/tuning/optimisation_history.png) | ![params](results/tuning/params_vs_score.png) |
+
+### HMM / Viterbi route reconstruction
+Hidden states = top-8 candidate arcs per point; emission = 2 x log P(true) from
+the tuned LightGBM; transition = exp(-|network driving distance - GPS
+distance| / 3 m); chain restarted after gaps > 60 s or when no transition is
+possible. Decoder parameters chosen on 30 train trips with out-of-fold
+probabilities.
+
+| student_test | Top-1 accuracy | Route continuity | Route arc F1 |
+|---|---|---|---|
+| Classifier only (tuned LightGBM) | 0.8849 | 0.9362 | 0.9191 |
+| **Classifier + HMM/Viterbi** | **0.9123** | **0.9834** | **0.9657** |
+
+The HMM improved all 10 student_test trips and 72 of 80 train trips
+(out-of-fold); 8 train trips got worse, notably trips 82 and 10 where the
+decoder stays on a wrong road for long stretches (see `VIVA_NOTES.md`).
+
+![per-trip](results/hmm/per_trip_student_test.png)
+
+Interactive map: [`maps/hmm_trip_00000076.html`](maps/hmm_trip_00000076.html)
+(reference route, HMM route, classifier-only picks, GPS).
+
+### API check (all 10 student_test trips through the running server)
+Point-weighted accuracy 0.9124, mean request time 1.28 s - identical per-trip
+accuracy to the offline experiments
+([`results/api_student_test_check.json`](results/api_student_test_check.json)).
 
 ## 1. Setup (both laptops)
 ```bash
