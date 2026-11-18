@@ -473,3 +473,68 @@ Plots: `per_trip_student_test.png`, `hmm_gain_per_trip_train.png`.
    driven and straight-line distance; small beta = strict "must follow the
    network". With 1 Hz data consecutive fixes are only ~13 m apart, so a
    strict beta (3 m) worked best.
+
+---
+
+## Stage 7 - Exported artifacts and FastAPI backend (laptop 1)
+
+### What we did and why
+- **Artifacts** (`artifacts/`): `classifier.joblib` (tuned LightGBM),
+  `classifier_config.json` (feature list, 50 m radius, parameters, seed),
+  `hmm_config.json` (beta 3, emission weight 2, top-K 8, gap 60 s).
+- **Prediction pipeline** (`src/pipeline.py`, class `PathSnapModel`): loads the
+  artifacts once; for a trip it runs candidates -> 13 features -> LightGBM
+  probabilities -> Viterbi, and returns one arc per GPS point (-1 if no
+  candidate within 50 m). The trip is loaded with `with_route=False`, so the
+  reference route cannot reach the model.
+- **Scoring** (`score_prediction`): only after prediction, the server loads the
+  reference route, labels the points the same way as in development
+  (monotonic alignment, points > 50 m not scored) and computes point
+  accuracy, route continuity and route arc F1.
+- **API** (`api/main.py`):
+  - `GET /health` - status and loaded model
+  - `GET /trips` - trip ids found in `PATHSNAP_EVAL_DIR`
+  - `POST /predict {"trip_id": ...}` - runs the pipeline, returns GPS
+    points (max 2,000 for the map), the predicted route geometry, the
+    metrics and timings. It does **not** return the reference route.
+  - Unknown ids are rejected (404), which also blocks path tricks like `../`.
+  - CORS is enabled because the UI runs on another laptop (different origin).
+  - Every request is logged to the console (trip, points, accuracy, time) -
+    these are the logs shown to the evaluator.
+- Start: `uvicorn api.main:app --host 0.0.0.0 --port 8000` (`0.0.0.0` so the
+  other laptop can reach it).
+
+### Results (real numbers, `results/api_student_test_check.json`)
+All 10 student-test trips through the running API:
+
+| Trip | Points | Accuracy | Continuity | Route arc F1 | Time (s) |
+|---|---|---|---|---|---|
+| 00000000 | 2,503 | 0.9664 | 0.9972 | 0.9609 | 0.95 |
+| 00000007 | 1,354 | 0.9638 | 1.0000 | 0.9878 | 0.40 |
+| 00000009 | 1,049 | 0.9152 | 0.9532 | 0.9675 | 0.76 |
+| 00000040 | 2,995 | 0.9466 | 0.9957 | 0.9817 | 1.16 |
+| 00000052 | 262 | 0.9924 | 0.9579 | 0.9939 | 0.17 |
+| 00000056 | 3,958 | 0.9504 | 0.9682 | 0.9808 | 3.58 |
+| 00000065 | 768 | 0.8919 | 0.9844 | 0.9588 | 1.11 |
+| 00000076 | 1,486 | 0.9704 | 0.9744 | 0.9619 | 2.19 |
+| 00000077 | 3,911 | 0.7712 | 0.9916 | 0.9261 | 1.92 |
+| 00000091 | 874 | 0.9119 | 0.9679 | 0.9373 | 0.58 |
+
+Point-weighted accuracy 0.9124, mean request time 1.28 s. The per-trip
+accuracies are identical to the offline Stage 6 results, so the API runs
+exactly the same pipeline as the experiments.
+
+### Viva questions
+1. **How do you make sure ground truth does not leak into prediction?** The
+   trip is loaded without the route for prediction; the route is read only
+   afterwards inside `score_prediction`, and only numbers go back to the UI.
+2. **Why `--host 0.0.0.0`?** The default 127.0.0.1 only accepts connections
+   from the same machine; 0.0.0.0 listens on the network so laptop 2 can
+   connect.
+3. **What is CORS and why enable it?** Browsers block a page from one origin
+   (laptop 2) calling an API on another origin (laptop 1) unless the API
+   allows it.
+4. **How would evaluator trips be served?** Set `PATHSNAP_EVAL_DIR` to their
+   folder; nothing in the code or model changes, and nothing is hardcoded.
+5. **How long does a prediction take?** 0.2-3.6 s per trip on student-test
+   (mean 1.3 s), mostly feature building and the HMM.

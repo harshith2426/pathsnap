@@ -1,0 +1,82 @@
+[
+ {
+  "trip_id": "00000000",
+  "n_gps_points": 2503,
+  "point_accuracy": 0.9664402716739912,
+  "route_continuity": 0.9972022382094324,
+  "route_arc_f1": 0.9608938547486033,
+  "request_s": 0.952
+ },
+ {
+  "trip_id": "00000007",
+  "n_gps_points": 1354,
+  "point_accuracy": 0.9638109305760709,
+  "route_continuity": 1.0,
+  "route_arc_f1": 0.9877551020408163,
+  "request_s": 0.395
+ },
+ {
+  "trip_id": "00000009",
+  "n_gps_points": 1049,
+  "point_accuracy": 0.9151572926596759,
+  "route_continuity": 0.9532442748091603,
+  "route_arc_f1": 0.967479674796748,
+  "request_s": 0.757
+ },
+ {
+  "trip_id": "00000040",
+  "n_gps_points": 2995,
+  "point_accuracy": 0.9465776293823038,
+  "route_continuity": 0.9956579826319305,
+  "route_arc_f1": 0.9816971713810316,
+  "request_s": 1.158
+ },
+ {
+  "trip_id": "00000052",
+  "n_gps_points": 262,
+  "point_accuracy": 0.9923664122137404,
+  "route_continuity": 0.9578544061302682,
+  "route_arc_f1": 0.9938650306748467,
+  "request_s": 0.166
+ },
+ {
+  "trip_id": "00000056",
+  "n_gps_points": 3958,
+  "point_accuracy": 0.9503943017044009,
+  "route_continuity": 0.9681576952236542,
+  "route_arc_f1": 0.9807792207792208,
+  "request_s": 3.584
+ },
+ {
+  "trip_id": "00000065",
+  "n_gps_points": 768,
+  "point_accuracy": 0.8919270833333334,
+  "route_continuity": 0.984354628422425,
+  "route_arc_f1": 0.9588014981273408,
+  "request_s": 1.112
+ },
+ {
+  "trip_id": "00000076",
+  "n_gps_points": 1486,
+  "point_accuracy": 0.9703903095558546,
+  "route_continuity": 0.9744107744107744,
+  "route_arc_f1": 0.9618768328445748,
+  "request_s": 2.191
+ },
+ {
+  "trip_id": "00000077",
+  "n_gps_points": 3911,
+  "point_accuracy": 0.7711582715418052,
+  "route_continuity": 0.9915601023017903,
+  "route_arc_f1": 0.9261261261261261,
+  "request_s": 1.917
+ },
+ {
+  "trip_id": "00000091",
+  "n_gps_points": 874,
+  "point_accuracy": 0.9118993135011442,
+  "route_continuity": 0.9679266895761741,
+  "route_arc_f1": 0.9373297002724795,
+  "request_s": 0.584
+ }
+]

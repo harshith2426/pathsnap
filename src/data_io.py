@@ -10,6 +10,7 @@ Node/arc ids are LOCAL to a trip: arc 5 in trip A has nothing to do with
 arc 5 in trip B.
 """
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -64,7 +65,12 @@ def _read(path, dtype=float, ncols=None):
 def load_trip(partition, trip_id, with_route=True):
     """Load one trip. with_route=False never reads the reference route
     (this is what the prediction pipeline uses)."""
-    base = DATA_DIR / partition / trip_id / trip_id
+    return load_trip_from_dir(DATA_DIR / partition, trip_id, with_route, partition)
+
+
+def load_trip_from_dir(folder, trip_id, with_route=True, partition="external"):
+    """Load a trip stored as <folder>/<trip_id>/<trip_id>.{track,nodes,arcs,route}."""
+    base = Path(folder) / trip_id / trip_id
     track = _read(f"{base}.track", float, 3)
     nodes = _read(f"{base}.nodes", float, 2)
     arcs = _read(f"{base}.arcs", int, 2)
