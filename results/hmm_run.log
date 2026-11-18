@@ -1,0 +1,38 @@
+{'beta': 3.0, 'emission_weight': 0.5, 'top_k': 5} top1=0.9124
+{'beta': 3.0, 'emission_weight': 0.5, 'top_k': 8} top1=0.9136
+{'beta': 3.0, 'emission_weight': 1.0, 'top_k': 5} top1=0.9158
+{'beta': 3.0, 'emission_weight': 1.0, 'top_k': 8} top1=0.9178
+{'beta': 3.0, 'emission_weight': 2.0, 'top_k': 5} top1=0.9187
+{'beta': 3.0, 'emission_weight': 2.0, 'top_k': 8} top1=0.9208
+{'beta': 10.0, 'emission_weight': 0.5, 'top_k': 5} top1=0.9184
+{'beta': 10.0, 'emission_weight': 0.5, 'top_k': 8} top1=0.9206
+{'beta': 10.0, 'emission_weight': 1.0, 'top_k': 5} top1=0.9173
+{'beta': 10.0, 'emission_weight': 1.0, 'top_k': 8} top1=0.9197
+{'beta': 10.0, 'emission_weight': 2.0, 'top_k': 5} top1=0.9137
+{'beta': 10.0, 'emission_weight': 2.0, 'top_k': 8} top1=0.9164
+{'beta': 30.0, 'emission_weight': 0.5, 'top_k': 5} top1=0.9150
+{'beta': 30.0, 'emission_weight': 0.5, 'top_k': 8} top1=0.9178
+{'beta': 30.0, 'emission_weight': 1.0, 'top_k': 5} top1=0.9130
+{'beta': 30.0, 'emission_weight': 1.0, 'top_k': 8} top1=0.9158
+{'beta': 30.0, 'emission_weight': 2.0, 'top_k': 5} top1=0.9110
+{'beta': 30.0, 'emission_weight': 2.0, 'top_k': 8} top1=0.9137
+best HMM params: {'beta': 3.0, 'emission_weight': 2.0, 'top_k': 8}
+                          method  top1_accuracy  route_continuity  route_arc_f1
+classifier only (tuned LightGBM)         0.8849            0.9362        0.9191
+        classifier + HMM/Viterbi         0.9123            0.9834        0.9657
+          classifier_only     hmm  change
+trip_id                                  
+00000000           0.9501  0.9664  0.0164
+00000007           0.9468  0.9638  0.0170
+00000009           0.8713  0.9152  0.0439
+00000040           0.9449  0.9466  0.0017
+00000052           0.9695  0.9924  0.0229
+00000056           0.9135  0.9504  0.0369
+00000065           0.8464  0.8919  0.0456
+00000076           0.9132  0.9704  0.0572
+00000077           0.7400  0.7712  0.0312
+00000091           0.8936  0.9119  0.0183
+                method  top1_accuracy  route_continuity  route_arc_f1
+ classifier only (OOF)         0.8792            0.9404        0.9053
+classifier + HMM (OOF)         0.9019            0.9841        0.9590
+map: D:\ML HACKATHON\pathsnap\maps\hmm_trip_00000076.html

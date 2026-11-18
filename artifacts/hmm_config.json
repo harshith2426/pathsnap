@@ -1,0 +1,8 @@
+{
+ "beta": 3.0,
+ "emission_weight": 2.0,
+ "top_k": 8,
+ "gap_s": 60.0,
+ "tuned_on": "30 train trips, OOF probabilities",
+ "student_test_decode_time_s": 6.167364120483398
+}

@@ -377,3 +377,99 @@ Plots: `optimisation_history.png` (score per trial + best so far),
    curve flattens after ~18 trials, suggesting more trials would add little.
 6. **Was student-test used during tuning?** No. Only TRAIN (3-fold CV) drove
    the search; student-test was evaluated once afterwards.
+
+---
+
+## Stage 6 - HMM and Viterbi route reconstruction
+
+### What we did and why
+The classifier scores each GPS point on its own, so consecutive points can be
+matched to roads that are not connected (a "jump"). The HMM adds the rule
+that the vehicle must drive along the network (`src/hmm.py`).
+
+- **Hidden states:** at GPS point *i*, "the vehicle is on candidate arc *c*",
+  for the top-K candidates by classifier probability. Each state keeps its
+  arc id and projected position on the arc, so every decoded state maps back
+  to exactly one road segment (candidate-to-segment correspondence preserved).
+- **Emission:** `w * log P(candidate is true)` from the tuned LightGBM
+  (`w` = emission weight).
+- **Transition:** for candidate *a* at point *i-1* and *b* at point *i*:
+  `d_route` = driving distance on the network from *a*'s projected position
+  to *b*'s (Dijkstra on arc lengths, limited search radius), `d_gps` =
+  straight-line distance between the two GPS points;
+  `log P(a -> b) = -|d_route - d_gps| / beta`. On the right path the driven
+  distance is close to the straight-line distance (Newson & Krumm idea).
+  Same arc moving slightly backwards (<= 10 m) is treated as GPS jitter.
+  No path within the search limit = impossible transition.
+- **Viterbi recurrence:**
+  `V_i(b) = w log e_i(b) + max_a [ V_{i-1}(a) - |d_route(a,b) - d_gps| / beta ]`,
+  with a back-pointer to the best *a*; the best final state is traced back
+  to get one arc per point.
+- **Gaps and missing candidates:** the chain is cut and restarted when the time
+  gap is > 60 s, or when no transition from any previous state is possible
+  (disconnected roads). Points without candidates are skipped (no prediction,
+  counted as wrong).
+- **Parameter choice without leakage:** beta, w and top-K were chosen by a grid
+  search (3 x 3 x 2 = 18 settings) on 30 train trips using **out-of-fold**
+  classifier probabilities (5-fold GroupKFold from Stage 5), so the decoder
+  sees probabilities as noisy as on unseen trips. Student-test was used only
+  to report the result.
+
+### Results (real numbers, `results/hmm/`)
+Grid (30 train trips, OOF probabilities): classifier only 0.8975 Top-1; HMM
+settings 0.9110-0.9208. **Best: beta = 3, emission weight = 2.0, top-K = 8**
+(0.9208). Saved in `artifacts/hmm_config.json`.
+
+| | Top-1 accuracy | Route continuity | Route arc F1 |
+|---|---|---|---|
+| Student-test, classifier only (tuned LightGBM) | 0.8849 | 0.9362 | 0.9191 |
+| **Student-test, classifier + HMM** | **0.9123** | **0.9834** | **0.9657** |
+| Train (all 80 trips, OOF), classifier only | 0.8792 | 0.9404 | 0.9053 |
+| Train (all 80 trips, OOF), classifier + HMM | 0.9019 | 0.9841 | 0.9590 |
+
+Reference continuity of the labels themselves: 0.985 - the HMM output is now
+almost as continuous as the reference.
+
+- Student-test: the HMM improved **all 10 trips** (+0.2 to +5.7 points Top-1;
+  biggest gains on trips 76, 65, 9, 56). Decoding all 10 trips took 6.2 s.
+- Train (OOF): improved 72 of 80 trips, median +2.3 points.
+- **Where the HMM did not help:** 8 train trips got worse, two badly -
+  trip 82 (0.839 -> 0.625) and trip 10 (0.630 -> 0.446). In both the decoder
+  stays on a wrong road for long stretches (578 and 708 consecutive wrong
+  points); only 1.8% / 4.6% of their errors are the opposite direction of the
+  true arc, so it is not a direction mix-up. Trip 82 is split into 49 chains,
+  i.e. transitions were often impossible - a sign that the network around
+  the true path is poorly connected or that the reference path uses
+  connections the search limit does not reach. Once the decoder commits to a
+  well-connected wrong road, the transition cost of switching back keeps it
+  there. Both are slow trips (~8.5 m/s median speed).
+- Continuity is not exactly 1.0 because our continuity metric only accepts
+  *directly* connected consecutive arcs; at 1 Hz a vehicle can pass a very
+  short arc between two GPS fixes, which the HMM allows.
+
+Map: `maps/hmm_trip_00000076.html` (biggest change on student-test) - GPS,
+road network, reference route (green), HMM route (red), classifier-only
+picks (orange, toggle in layer control).
+Plots: `per_trip_student_test.png`, `hmm_gain_per_trip_train.png`.
+
+### Viva questions
+1. **What are the hidden states?** The candidate arcs of each GPS point (top 8
+   by classifier probability), with the projected position on the arc.
+2. **How are emission probabilities computed?** From the tuned LightGBM:
+   log P(candidate is true), weighted by w = 2.
+3. **How are transition probabilities computed?** Exponential in the
+   difference between network driving distance and straight-line GPS
+   distance: exp(-|d_route - d_gps| / beta), beta = 3 m.
+4. **What happens with large gaps or disconnected roads?** Gap > 60 s or no
+   possible transition -> the chain is cut and a new one starts, so one bad
+   step cannot corrupt the whole trip.
+5. **Did the HMM improve the route?** Yes: student-test Top-1 0.885 -> 0.912,
+   continuity 0.936 -> 0.983, route arc F1 0.919 -> 0.966; all 10 trips
+   improved. On train it helped 72/80 trips but hurt 8 (see above).
+6. **Why tune the HMM on out-of-fold probabilities?** In-sample probabilities
+   on train trips are over-confident; OOF probabilities behave like those on
+   new trips, so the chosen beta / w transfer.
+7. **What does beta mean?** The tolerance (in metres) for the mismatch between
+   driven and straight-line distance; small beta = strict "must follow the
+   network". With 1 Hz data consecutive fixes are only ~13 m apart, so a
+   strict beta (3 m) worked best.

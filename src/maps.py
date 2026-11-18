@@ -49,8 +49,10 @@ def nearby_arcs(trip, margin_m=200):
     return ids[np.sort(first)]
 
 
-def trip_map(trip, route_arcs=None, predicted_arcs=None, title=None, max_points=3000):
-    """Build a folium.Map for a trip. route_arcs / predicted_arcs are arc ids."""
+def trip_map(trip, route_arcs=None, predicted_arcs=None, title=None, max_points=3000,
+             extra_layers=()):
+    """Build a folium.Map for a trip. route_arcs / predicted_arcs are arc ids.
+    extra_layers: optional [(name, arc_ids, colour)] drawn dashed, hidden at start."""
     lat_lon = trip.gps_lonlat[:, ::-1]
     m = folium.Map(tiles="OpenStreetMap", control_scale=True)
     m.fit_bounds([lat_lon.min(axis=0).tolist(), lat_lon.max(axis=0).tolist()])
@@ -73,6 +75,12 @@ def trip_map(trip, route_arcs=None, predicted_arcs=None, title=None, max_points=
                         weight=3, opacity=0.9).add_to(layer)
         layer.add_to(m)
         legend.append(_legend_row("red", "Predicted route"))
+    for name, arc_ids, color in extra_layers:
+        layer = folium.FeatureGroup(name=name, show=False)
+        folium.PolyLine(_arc_lines(trip, np.unique(arc_ids)), color=color,
+                        weight=3, opacity=0.9, dash_array="6").add_to(layer)
+        layer.add_to(m)
+        legend.append(_legend_row(color, name))
 
     # GPS points (subsampled evenly if the track is very long, to keep HTML small)
     step = max(1, len(lat_lon) // max_points)
