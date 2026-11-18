@@ -538,3 +538,45 @@ exactly the same pipeline as the experiments.
    folder; nothing in the code or model changes, and nothing is hardcoded.
 5. **How long does a prediction take?** 0.2-3.6 s per trip on student-test
    (mean 1.3 s), mostly feature building and the HMM.
+
+---
+
+## Stage 8 - Evaluator UI (laptop 2)
+
+### What we did and why
+- **Plain HTML + JavaScript + Leaflet** (`ui/index.html`, `ui/app.js`,
+  `ui/style.css`, `ui/config.js`). Nothing to install on laptop 2: it is
+  served with `python -m http.server 8080 --directory ui` and opened in a
+  browser. Leaflet (map library) and OpenStreetMap tiles come from the
+  internet.
+- **Flow:**
+  1. The API address is typed in the "API connection" box (or set once in
+     `ui/config.js`); it is remembered in the browser.
+  2. **Connect** calls `GET /health` and `GET /trips` and shows one button
+     per trip (at the demo: the 10 evaluator trips).
+  3. Clicking a trip sends **only the trip id** to `POST /predict`.
+  4. The UI draws the GPS observations (blue dots) and the predicted route
+     (red line) with a legend and a layer switch, zooms to the trip, and
+     shows: point accuracy, points matched / scored, route continuity,
+     route segment F1, number of predicted segments, HMM chains, and server
+     time split into features / classifier / HMM.
+- The UI never receives or draws the reference route - ground truth stays on
+  the server; the UI only shows the server's accuracy numbers.
+
+### Results
+Tested in the browser against the final API (tuned LightGBM + HMM) on the
+10 student-test trips: connection status "Connected · LightGBM
+(Optuna-tuned)", 10 trip buttons, e.g. trip 00000076 -> 97.04% point
+accuracy, 1,486 points, map drawn and zoomed, no browser console errors.
+The API console logged every request.
+
+### Viva questions
+1. **Why a static HTML page and not Streamlit/React?** Laptop 2 then needs no
+   Python packages or build step - only a browser - so the demo setup has
+   fewer things that can go wrong.
+2. **How does the UI talk to the API?** `fetch()` calls over HTTP to
+   `http://<laptop-1-ip>:8000`; CORS is enabled on the API for this.
+3. **Can the UI see the ground truth?** No. The API response contains only
+   the GPS preview, the predicted route and the metrics.
+4. **What if the API address changes?** Type the new address in the box and
+   press Connect - no code change.

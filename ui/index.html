@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PathSnap Evaluator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>PathSnap</h1>
+    <span class="subtitle">GPS map-matching &amp; route reconstruction</span>
+  </header>
+
+  <main>
+    <aside>
+      <section class="card">
+        <h2>API connection</h2>
+        <div class="row">
+          <input id="apiUrl" type="text" spellcheck="false" aria-label="API URL">
+          <button id="connectBtn">Connect</button>
+        </div>
+        <p id="apiStatus" class="status">Not connected</p>
+      </section>
+
+      <section class="card">
+        <h2>Evaluation trips</h2>
+        <div id="tripList" class="trip-list"><p class="muted">Connect to load trips.</p></div>
+      </section>
+
+      <section class="card">
+        <h2>Results</h2>
+        <div id="results"><p class="muted">Select a trip.</p></div>
+      </section>
+    </aside>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div id="busy" class="busy hidden">Running pipeline on the server…</div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
