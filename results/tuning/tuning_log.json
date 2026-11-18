@@ -1,0 +1,26 @@
+{
+ "sampler": "TPE",
+ "n_trials": 25,
+ "cv_folds": 3,
+ "objective": "mean CV Top-1 accuracy (maximise)",
+ "best_params": {
+  "n_estimators": 700,
+  "learning_rate": 0.01105395867712938,
+  "num_leaves": 127,
+  "min_child_samples": 24,
+  "subsample": 0.592375979849163,
+  "colsample_bytree": 0.6962564993438799,
+  "reg_lambda": 1.1339654519452922
+ },
+ "best_cv_top1": 0.8766308879281315,
+ "search_time_s": 1422.8299045562744,
+ "untuned_params": {
+  "n_estimators": 300,
+  "learning_rate": 0.05,
+  "num_leaves": 31,
+  "min_child_samples": 20,
+  "subsample": 1.0,
+  "colsample_bytree": 1.0,
+  "reg_lambda": 0.0
+ }
+}

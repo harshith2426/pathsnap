@@ -1,0 +1,5 @@
+[I 2026-11-18 11:29:14,889] A new study created in memory with name: no-name-1a075d61-4760-4f7a-9abe-6a813dd68ce1
+best params: {'n_estimators': 700, 'learning_rate': 0.01105395867712938, 'num_leaves': 127, 'min_child_samples': 24, 'subsample': 0.592375979849163, 'colsample_bytree': 0.6962564993438799, 'reg_lambda': 1.1339654519452922} cv top1: 0.87663 search 1423s
+           model  cv_macro_f1  cv_top1_accuracy  cv_log_loss  test_macro_f1  test_log_loss  test_top1_accuracy  test_route_continuity  inference_ms_per_1k_points  fit_time_s
+LightGBM untuned       0.9288            0.8760       0.0679         0.9322         0.0556              0.8831                 0.9336                     26.8250      6.7901
+  LightGBM tuned       0.9299            0.8778       0.0649         0.9338         0.0545              0.8849                 0.9362                     88.2015     48.0121

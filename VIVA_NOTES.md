@@ -297,3 +297,83 @@ epochs / iterations, so only they have loss curves).
 7. **Why sample 600k rows?** Equal training size for every model makes the
    comparison fair and keeps run time manageable; the 600k rows still cover
    all 80 training trips.
+
+---
+
+## Stage 5 - Bayesian hyperparameter optimisation (LightGBM)
+
+### What we did and why
+- **Tool:** Optuna with the **TPE sampler** (Tree-structured Parzen Estimator).
+  TPE is Bayesian: it keeps two probability models - one of parameter values
+  that gave good scores, one of values that gave bad scores - and proposes
+  the next trial where "good" is most likely relative to "bad". So it learns
+  from earlier trials, unlike grid or random search.
+- **Objective:** maximise mean **Top-1 accuracy** over **3-fold GroupKFold by
+  trip** on TRAIN reliable points (the same primary metric as model
+  selection). Macro F1 and log loss were recorded for every trial.
+- **Search space** (`src/tune.py`):
+
+| Hyperparameter | Range | Why |
+|---|---|---|
+| n_estimators | 100-800 (step 50) | more trees = more capacity |
+| learning_rate | 0.01-0.2 (log) | step size; small needs more trees |
+| num_leaves | 15-255 (log) | complexity of each tree |
+| min_child_samples | 10-300 (log) | minimum rows per leaf - regularisation |
+| subsample | 0.5-1.0 | row sampling per tree - reduces variance |
+| colsample_bytree | 0.5-1.0 | feature sampling per tree |
+| reg_lambda | 0.001-10 (log) | L2 penalty on leaf values |
+
+- **Trials:** 25 (first trial = the default-like configuration so the search
+  starts from the untuned point). Search time 1,423 s (~24 min).
+- Same 600k-row training budget per fit as Stage 4, so tuned vs untuned is a
+  fair comparison. STUDENT_TEST was used only after the search to report.
+- After tuning, the model was refitted on the train sample and exported to
+  `artifacts/classifier.joblib` (+ `classifier_config.json`). We also saved
+  out-of-fold (OOF) probabilities on train for tuning the HMM.
+
+### Results (`results/tuning/`)
+Best parameters: n_estimators **700**, learning_rate **0.0111**, num_leaves
+**127**, min_child_samples **24**, subsample **0.592**, colsample_bytree
+**0.696**, reg_lambda **1.134**. Best 3-fold CV Top-1: 0.8766 (trial 18),
+starting point (trial 0): 0.8728.
+
+Tuned vs untuned (same 5-fold CV and the same student-test data):
+
+| | CV macro F1 | CV Top-1 | CV log loss | Test macro F1 | Test Top-1 | Test log loss | Fit (s) | Inference (ms / 1k pts) |
+|---|---|---|---|---|---|---|---|---|
+| Untuned | 0.9288 | 0.8760 | 0.0679 | 0.9322 | 0.8831 | 0.0556 | 6.8 | 26.8 |
+| **Tuned** | **0.9299** | **0.8778** | **0.0649** | **0.9338** | **0.8849** | **0.0545** | 48.0 | 88.2 |
+
+- The tuned model is better on **every** quality metric, but the gain is
+  small (+0.18 points Top-1 on both CV and student-test). Interpretation: the
+  features already carry most of the information; the defaults were close
+  to optimal.
+- The improvement is in the same direction on CV and on the unseen
+  student-test trips, so it is not an artefact of the search.
+- Cost: ~7x longer training, ~3x slower prediction (still < 0.1 s per 1,000
+  points - fine for the API).
+- What the search preferred: many small steps (low learning rate, many
+  trees), bigger trees (127 leaves) and row/feature sub-sampling (~0.6-0.7)
+  as regularisation. Trial 1 (0.855) shows that a bad combination can cost
+  2 points.
+
+Plots: `optimisation_history.png` (score per trial + best so far),
+`params_vs_score.png` (each hyperparameter vs score). All trials:
+`optuna_trials.csv`.
+
+### Viva questions
+1. **What makes this "Bayesian"?** TPE builds probability models of good and
+   bad parameter regions from past trials and samples where good is more
+   likely; each trial uses the evidence from previous ones.
+2. **Why optimise Top-1 accuracy?** It is the primary metric (correct road per
+   GPS point) and what the evaluator measures.
+3. **Why group-aware CV in tuning?** Tuning on a random split would reward
+   parameters that memorise individual trips; grouping by trip measures
+   generalisation to new trips.
+4. **Did tuning help?** Yes, slightly: CV Top-1 0.8760 -> 0.8778, test Top-1
+   0.8831 -> 0.8849, test log loss 0.0556 -> 0.0545. It is a consistent but
+   small gain.
+5. **Why only 25 trials and 3 folds?** Time budget (~24 min). The best-so-far
+   curve flattens after ~18 trials, suggesting more trials would add little.
+6. **Was student-test used during tuning?** No. Only TRAIN (3-fold CV) drove
+   the search; student-test was evaluated once afterwards.
